@@ -1,0 +1,22 @@
+{
+  "name": "rollup-test",
+  "version": "0.1.0",
+  "description": "Kodi In Progress Shows Lovelace Card",
+  "main": "src/main.js",
+  "scripts": {
+    "rollup": "rollup -c"
+  },
+  "author": "Dennis Rådell",
+  "dependencies": {
+    "deep-clone-simple": "^1.1.1",
+    "lit-element": "^2.1.0",
+    "swiper": "^4.5.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "postcss": "^8.2.8",
+    "rollup": "^0.66.6",
+    "rollup-plugin-postcss": "^4.0.0",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}
