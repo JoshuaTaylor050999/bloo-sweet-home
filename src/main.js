@@ -287,12 +287,8 @@ class KodiInProgressShows extends LitElement {
         display: inline-flex;
       }
       .swiper-container {
-        border-radius: var(--ha-card-border-radius, 4px);
         height: 281px !important;
         overflow: hidden;
-      }
-      .swiper-slide {
-        border-radius: var(--ha-card-border-radius, 4px);
       }
       .container2 {
         background-size: cover;
@@ -304,7 +300,7 @@ class KodiInProgressShows extends LitElement {
       .container2 {
         display: inline-block;
         position: relative;
-        border-radius: 15px;
+        border-radius: var(--ha-card-border-radius, 4px);
         overflow: hidden;
       }
       .info:before {
