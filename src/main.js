@@ -57,10 +57,8 @@ class KodiInProgressShows extends LitElement {
       case "VideoLibrary.GetInProgressTVShows":
         if (this._tvShows.length < 1) {
           event.data.result.tvshows.sort((a, b) => Date.parse(b.lastplayed) - Date.parse(a.lastplayed));
-          for (let show of event.data.result.tvshows) {
-            show.fanart = decodeURIComponent(show.fanart.replace("image://", ""));
-          }
           this._tvShows = event.data.result.tvshows;
+          this.getArt(this._tvShows);
           this.getUpNextEpisode();
         }
         break;
@@ -73,6 +71,27 @@ class KodiInProgressShows extends LitElement {
         }
         break;
     }
+  }
+
+
+  async getArt(shows) {
+    shows.forEach((element) => {
+      let url =
+        "https://webservice.fanart.tv/v3/tv/" +
+        element.imdbnumber +
+        "?api_key=9c2e867ba40ae8d79001e5cef716243d";
+      fetch(url)
+        .then((data) => {
+          return data.json();
+        })
+        .then((res) => {
+          if (res.showbackground.length > 0) {
+            element.fanart = res.showbackground[0].url.replace(" ", "%20");
+          }
+        })
+    });
+
+
   }
 
   setEpisodeDetails(show, episode) {
@@ -101,7 +120,7 @@ class KodiInProgressShows extends LitElement {
       method: "VideoLibrary.GetInProgressTVShows",
       properties: [
         "lastplayed",
-        "fanart",
+        "imdbnumber",
       ]
     });
   }
