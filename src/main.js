@@ -1,4 +1,4 @@
-import { LitElement, html, css, } from "lit-element";
+import {LitElement, html, css,} from "lit-element";
 
 import Swiper from 'swiper';
 
@@ -6,211 +6,213 @@ let ART_LOCATIONS = ['showbackground', 'tvthumb'];
 const license_key = "4ceeaf34fda30b433102357976b1ec3b";
 
 class KodiInProgressShows extends LitElement {
-  static get properties() {
-    return {
-      _hass: {},
-      _tvShows: [],
-      _config: {},
-    };
-  }
-
-  shouldUpdate(changedProps) {
-    if (changedProps.has("_config")) {
-      return true;
-    }
-    if (changedProps.has("_tvShows")) {
-      if (this.swiper) {
-        this.swiper.update();
-      }
-      return true;
-    }
-    return false;
-  }
-
-  setConfig(config) {
-    if (!config || !config.entity) {
-      throw new Error("Card config incorrect");
-    }
-    if (!config.entity.startsWith("media_player")) {
-      throw new Error("Only Kodi entities are allowed");
-    }
-    this._config = config;
-    this._tvShows = [];
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-
-    if (!this.connection) {
-      this.connection = this._hass.connection.subscribeEvents((event) => {
-        this.handleEvent(event);
-      }, "kodi_call_method_result");
-    }
-    if (this._config && this._hass) {
-      this._loadSwiper();
-    } else if (this.swiper) {
-      this.swiper.update();
+    static get properties() {
+        return {
+            _hass: {},
+            _tvShows: [],
+            _config: {},
+        };
     }
 
-    this.getData();
-  }
-
-  handleEvent(event) {
-    switch (event.data.input.method) {
-      case "VideoLibrary.GetInProgressTVShows":
-        if (this._tvShows.length < 1) {
-          event.data.result.tvshows.sort((a, b) => Date.parse(b.lastplayed) - Date.parse(a.lastplayed));
-          this._tvShows = event.data.result.tvshows;
-          this.getArt(this._tvShows);
-          this.getUpNextEpisode();
+    shouldUpdate(changedProps) {
+        if (changedProps.has("_config")) {
+            return true;
         }
-        break;
-      case "VideoLibrary.GetEpisodes":
-        let episode = event.data.result.episodes[0];
-        let show = this._tvShows.find(show => show.tvshowid == episode.tvshowid);
-        if (show && !show.episode) {
-          this.setEpisodeDetails(show, episode);
-          this.requestUpdate("_tvShows");
-        }
-        break;
-    }
-  }
-
-  async getArt(shows) {
-    shows.forEach((element) => {
-      let url =
-        "https://webservice.fanart.tv/v3/tv/" +
-        element.imdbnumber +
-        "?api_key=" + license_key;
-      fetch(url)
-        .then((data) => {
-          return data.json();
-        })
-          .then((json) => {
-            for (const artLocation of ART_LOCATIONS) {
-              if (json[artLocation] && json[artLocation].length > 0) {
-                element.fanart = json[artLocation][0].url.replace(" ", "%20");
-                return;
-              }
+        if (changedProps.has("_tvShows")) {
+            if (this.swiper) {
+                this.swiper.update();
             }
-            element.fanart = "";
-          });
-    });
-  }
-
-  setEpisodeDetails(show, episode) {
-    show.season = episode.season;
-    show.episode = episode.episode;
-    show.runtime = this.getRuntimeString(episode.runtime);
-    show.episodetitle = episode.title;
-    show.rating = Number(episode.rating) > 0 ? Number(episode.rating).toFixed(1) : null;
-    show.file = episode.file;
-  }
-
-  getRuntimeString(runtime) {
-    let hrs = Math.floor(runtime / 3600);
-    let mins = ((runtime % 3600) / 60).toFixed();
-    let runtimeString = "";
-    if (hrs > 0) {
-      runtimeString += hrs + "h" + " ";
-    }
-    runtimeString += mins + "m";
-    return runtimeString;
-  }
-
-  async getData() {
-    await this._hass.callService("kodi", "call_method", {
-      entity_id: this._config.entity,
-      method: "VideoLibrary.GetInProgressTVShows",
-      properties: [
-        "lastplayed",
-        "imdbnumber",
-      ]
-    });
-  }
-
-  async getUpNextEpisode() {
-    if (!this._hass || !this._config) return;
-
-    for (let i = 0; i < this._tvShows.length; i++) {
-      await this._hass.callService("kodi", "call_method", {
-        entity_id: this._config.entity,
-        method: "VideoLibrary.GetEpisodes",
-        tvshowid: this._tvShows[i].tvshowid,
-        limits: {
-          start: 0,
-          end: 1,
-        },
-        properties: [
-          "title",
-          "rating",
-          "runtime",
-          "season",
-          "episode",
-          "file",
-          "tvshowid",
-        ],
-        filter: {
-          "and": [
-            {
-              field: "playcount",
-              operator: "is",
-              value: "0",
-            },
-            {
-              field: "episode",
-              operator: "isnot",
-              value: "-1",
-            },
-            {
-              field: "season",
-              operator: "isnot",
-              value: "0",
-            },
-          ]
-        },
-      });
-    }
-  }
-
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this.connection) {
-      this.connection
-        .then((data) => data())
-        .catch((err) => { });
-    }
-    if (this._ripple) {
-      this._ripple.remove();
-    }
-  }
-
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (this._config && this._hass && !this._hasLoaded) {
-      this._loadSwiper();
-    } else if (this.swiper) {
-      this.swiper.update();
-    }
-  }
-
-  getCardSize() {
-    return 5;
-  }
-
-  set hass(hass) {
-    this._hass = hass;
-  }
-
-  render() {
-    if (!this._config || !this._hass) {
-      return html`<ha-card>
-      <div class="swiper-container"> </div>
-      </ha-card>`;
+            return true;
+        }
+        return false;
     }
 
-    return html`
+    setConfig(config) {
+        if (!config || !config.entity) {
+            throw new Error("Card config incorrect");
+        }
+        if (!config.entity.startsWith("media_player")) {
+            throw new Error("Only Kodi entities are allowed");
+        }
+        this._config = config;
+        this._tvShows = [];
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+
+        if (!this.connection) {
+            this.connection = this._hass.connection.subscribeEvents((event) => {
+                this.handleEvent(event);
+            }, "kodi_call_method_result");
+        }
+        if (this._config && this._hass) {
+            this._loadSwiper();
+        } else if (this.swiper) {
+            this.swiper.update();
+        }
+
+        this.getData();
+    }
+
+    handleEvent(event) {
+        switch (event.data.input.method) {
+            case "VideoLibrary.GetInProgressTVShows":
+                if (this._tvShows.length < 1) {
+                    event.data.result.tvshows.sort((a, b) => Date.parse(b.lastplayed) - Date.parse(a.lastplayed));
+                    this._tvShows = event.data.result.tvshows;
+                    this.getArt(this._tvShows);
+                    this.getUpNextEpisode();
+                }
+                break;
+            case "VideoLibrary.GetEpisodes":
+                let episode = event.data.result.episodes[0];
+                let show = this._tvShows.find(show => show.tvshowid == episode.tvshowid);
+                if (show && !show.episode) {
+                    this.setEpisodeDetails(show, episode);
+                    this.requestUpdate("_tvShows");
+                }
+                break;
+        }
+    }
+
+    async getArt(shows) {
+        shows.forEach((element) => {
+            let url =
+                "https://webservice.fanart.tv/v3/tv/" +
+                element.imdbnumber +
+                "?api_key=" + license_key;
+            fetch(url)
+                .then((data) => {
+                    return data.json();
+                })
+                .then((json) => {
+                    for (const artLocation of ART_LOCATIONS) {
+                        if (json[artLocation] && json[artLocation].length > 0) {
+                            element.fanart = json[artLocation][0].url.replace(" ", "%20");
+                            return;
+                        }
+                    }
+                    element.fanart = "";
+                });
+        });
+    }
+
+    setEpisodeDetails(show, episode) {
+        show.season = episode.season;
+        show.episode = episode.episode;
+        show.runtime = this.getRuntimeString(episode.runtime);
+        show.episodetitle = episode.title;
+        show.rating = Number(episode.rating) > 0 ? Number(episode.rating).toFixed(1) : null;
+        show.file = episode.file;
+    }
+
+    getRuntimeString(runtime) {
+        let hrs = Math.floor(runtime / 3600);
+        let mins = ((runtime % 3600) / 60).toFixed();
+        let runtimeString = "";
+        if (hrs > 0) {
+            runtimeString += hrs + "h" + " ";
+        }
+        runtimeString += mins + "m";
+        return runtimeString;
+    }
+
+    async getData() {
+        await this._hass.callService("kodi", "call_method", {
+            entity_id: this._config.entity,
+            method: "VideoLibrary.GetInProgressTVShows",
+            properties: [
+                "lastplayed",
+                "imdbnumber",
+            ]
+        });
+    }
+
+    async getUpNextEpisode() {
+        if (!this._hass || !this._config) return;
+
+        for (let i = 0; i < this._tvShows.length; i++) {
+            await this._hass.callService("kodi", "call_method", {
+                entity_id: this._config.entity,
+                method: "VideoLibrary.GetEpisodes",
+                tvshowid: this._tvShows[i].tvshowid,
+                limits: {
+                    start: 0,
+                    end: 1,
+                },
+                properties: [
+                    "title",
+                    "rating",
+                    "runtime",
+                    "season",
+                    "episode",
+                    "file",
+                    "tvshowid",
+                ],
+                filter: {
+                    "and": [
+                        {
+                            field: "playcount",
+                            operator: "is",
+                            value: "0",
+                        },
+                        {
+                            field: "episode",
+                            operator: "isnot",
+                            value: "-1",
+                        },
+                        {
+                            field: "season",
+                            operator: "isnot",
+                            value: "0",
+                        },
+                    ]
+                },
+            });
+        }
+    }
+
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.connection) {
+            this.connection
+                .then((data) => data())
+                .catch((err) => {
+                });
+        }
+        if (this._ripple) {
+            this._ripple.remove();
+        }
+    }
+
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        if (this._config && this._hass && !this._hasLoaded) {
+            this._loadSwiper();
+        } else if (this.swiper) {
+            this.swiper.update();
+        }
+    }
+
+    getCardSize() {
+        return 5;
+    }
+
+    set hass(hass) {
+        this._hass = hass;
+    }
+
+    render() {
+        if (!this._config || !this._hass) {
+            return html`
+                <ha-card>
+                    <div class="swiper-container"></div>
+                </ha-card>`;
+        }
+
+        return html`
       <ha-card>
         <div class="swiper-container">
           <div class="swiper-wrapper">
@@ -230,7 +232,7 @@ class KodiInProgressShows extends LitElement {
                             </svg>
                           </span>
                           ` : ""}
-                        </h5>`  : ""}
+                        </h5>` : ""}
                       </div>
                       <div>
                       <button class="playbutton ripple" @click="${(e) => this._handleClick(e, item.file)}">
@@ -245,64 +247,64 @@ class KodiInProgressShows extends LitElement {
                     </div>
                   </div>
                 `
-    )}
+        )}
           </div>
         </div>
       </ha-card>
     `;
-  }
-
-  _handleClick(event, epid) {
-    if (epid == null) return;
-    console.log(epid);
-
-    this._animateRipple(event);
-
-    this._hass.callService("kodi", "call_method", {
-      entity_id: this._config.entity,
-      method: "Player.Open",
-      item: { "file": epid },
-    });
-  }
-
-  _animateRipple(event) {
-    const button = event.currentTarget;
-    const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - (button.getBoundingClientRect().left + radius)}px`;
-    circle.style.top = `${event.clientY - (button.offsetTop + button.getBoundingClientRect().top + radius)}px`;
-    circle.classList.add("ripple");
-
-    let ripple = button.getElementsByClassName("ripple")[0];
-
-    if (ripple) {
-      ripple.remove();
     }
-    button.appendChild(circle);
 
-    this._ripple = button.getElementsByClassName("ripple")[0];
+    _handleClick(event, epid) {
+        if (epid == null) return;
+        console.log(epid);
 
-  }
+        this._animateRipple(event);
 
-  async _loadSwiper() {
-    this._hasLoaded = true;
+        this._hass.callService("kodi", "call_method", {
+            entity_id: this._config.entity,
+            method: "Player.Open",
+            item: {"file": epid},
+        });
+    }
 
-    await this.updateComplete;
+    _animateRipple(event) {
+        const button = event.currentTarget;
+        const circle = document.createElement("span");
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
 
-    this.swiper = new Swiper(
-      this.shadowRoot.querySelector(".swiper-container"),
-      {
-        spaceBetween: 16,
-        resizeObserver: true,
-      }
-    );
-  }
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - (button.getBoundingClientRect().left + radius)}px`;
+        circle.style.top = `${event.clientY - (button.offsetTop + button.getBoundingClientRect().top + radius)}px`;
+        circle.classList.add("ripple");
 
-  static get styles() {
-    return css`
+        let ripple = button.getElementsByClassName("ripple")[0];
+
+        if (ripple) {
+            ripple.remove();
+        }
+        button.appendChild(circle);
+
+        this._ripple = button.getElementsByClassName("ripple")[0];
+
+    }
+
+    async _loadSwiper() {
+        this._hasLoaded = true;
+
+        await this.updateComplete;
+
+        this.swiper = new Swiper(
+            this.shadowRoot.querySelector(".swiper-container"),
+            {
+                spaceBetween: 16,
+                resizeObserver: true,
+            }
+        );
+    }
+
+    static get styles() {
+        return css`
       :host {
         --swiper-theme-color: var(--primary-color);
       }
@@ -427,7 +429,7 @@ class KodiInProgressShows extends LitElement {
         }
       }
     `;
-  }
+    }
 
 }
 
