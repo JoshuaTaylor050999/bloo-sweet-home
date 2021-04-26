@@ -3,6 +3,7 @@ import { LitElement, html, css, } from "lit-element";
 import Swiper from 'swiper';
 
 let ART_LOCATIONS = ['showbackground', 'tvthumb'];
+const license_key = "4ceeaf34fda30b433102357976b1ec3b";
 
 class KodiInProgressShows extends LitElement {
   static get properties() {
@@ -80,7 +81,7 @@ class KodiInProgressShows extends LitElement {
       let url =
         "https://webservice.fanart.tv/v3/tv/" +
         element.imdbnumber +
-        "?api_key=9c2e867ba40ae8d79001e5cef716243d";
+        "?api_key=" + license_key;
       fetch(url)
         .then((data) => {
           return data.json();
