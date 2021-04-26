@@ -3,11 +3,19 @@ A Lovelace card that shows the current in progress tv shows from Kodi. The card 
 
 This project uses [Swiper](https://swiperjs.com/) to display the cards, and [fanart.tv](https://fanart.tv/) for images. 
 
-## Manual Installation
-1. Download _kodi-in-progress.js_ from the latest release on the [releases page](https://github.com/Dengis-Kahn/kodi-in-progress-shows/releases).
-2. Put the file in the `<config>/www` folder in your Home Assistant instance.
+***
+
+## Installation
+To install this custom card, follow the instructions in <a href="#hacs-installation">HACS Installation</a> or <a href="#manual-installation">Manual Installation</a>
+
+### HACS Installation
+Add this repository as a custom repository in HACS ([guide](https://hacs.xyz/docs/faq/custom_repositories))
+
+### Manual Installation
+1. Download _kodi-in-progress.js_ from the latest release on the [releases page](https://github.com/Dengis-Kahn/kodi-in-progress-shows/releases) and put it in the `<config>/www` folder of your Home Assistant instance.
 3. Add a new Lovelace resource with the URL `/local/kodi-in-progress.js` and Resource type `JavaScript Module` and reload your Lovelace.
 
+***
 
 ## Configuration
 Add a new custom card to your Lovelace dashboard:
@@ -17,3 +25,8 @@ entity: media_player.<kodi-name>
 ```
 Replace _\<kodi-name\>_ with the name of your Kodi media player as configured in Home Assistant.
 
+***
+
+## Acknowledgements
+
+Inspired by https://github.com/bramkragten/swipe-card.
