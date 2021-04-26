@@ -22,6 +22,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: kodi-in-progress.js
-          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
