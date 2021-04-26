@@ -2,6 +2,8 @@ import { LitElement, html, css, } from "lit-element";
 
 import Swiper from 'swiper';
 
+let ART_LOCATIONS = ['showbackground', 'tvthumb'];
+
 class KodiInProgressShows extends LitElement {
   static get properties() {
     return {
@@ -73,7 +75,6 @@ class KodiInProgressShows extends LitElement {
     }
   }
 
-
   async getArt(shows) {
     shows.forEach((element) => {
       let url =
@@ -84,14 +85,16 @@ class KodiInProgressShows extends LitElement {
         .then((data) => {
           return data.json();
         })
-        .then((res) => {
-          if (res.showbackground.length > 0) {
-            element.fanart = res.showbackground[0].url.replace(" ", "%20");
-          }
-        })
+          .then((json) => {
+            for (const artLocation of ART_LOCATIONS) {
+              if (json[artLocation] && json[artLocation].length > 0) {
+                element.fanart = json[artLocation][0].url.replace(" ", "%20");
+                return;
+              }
+            }
+            element.fanart = "";
+          });
     });
-
-
   }
 
   setEpisodeDetails(show, episode) {
