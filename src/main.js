@@ -38,21 +38,21 @@ class KodiInProgressShows extends LitElement {
     this._tvShows = [];
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  firstUpdated() {
+    super.firstUpdated();
 
-    if (!this.connection) {
-      this.connection = this._hass.connection.subscribeEvents((event) => {
-        this.handleEvent(event);
-      }, "kodi_call_method_result");
-    }
     if (this._config && this._hass) {
       this._loadSwiper();
     } else if (this.swiper) {
       this.swiper.update();
     }
 
-    this.getData();
+    if (!this.connection && this._hass) {
+      this.connection = this._hass.connection.subscribeEvents((event) => {
+        this.handleEvent(event);
+      }, "kodi_call_method_result");
+      this.getData();
+    }
   }
 
   handleEvent(event) {
