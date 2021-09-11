@@ -137,6 +137,9 @@ class KodiInProgressShows extends LitElement {
         entity_id: this._config.entity,
         method: "VideoLibrary.GetEpisodes",
         tvshowid: this._tvShows[i].tvshowid,
+        sort: {
+          method: "episode",
+        },
         limits: {
           start: 0,
           end: 1,
