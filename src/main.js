@@ -312,6 +312,7 @@ class KodiInProgressShows extends LitElement {
         display: inline-flex;
       }
       .swiper-container {
+        border-radius: var(--ha-card-border-radius, 4px);
         height: 281px !important;
         overflow: hidden;
       }
