@@ -67,6 +67,7 @@ class KodiInProgressShows extends LitElement {
                 break;
             case "VideoLibrary.GetEpisodes":
                 let episode = event.data.result.episodes[0];
+                if (episode == undefined) break;
                 let show = this._tvShows.find(show => show.tvshowid == episode.tvshowid);
                 if (show && !show.episode) {
                     this.setEpisodeDetails(show, episode);
